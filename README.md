@@ -74,44 +74,6 @@ npm link
 npm unlink -g repoclip
 ```
 
-## Usage
-
-### Basic Usage
-```bash
-# Copy all non-gitignored files to clipboard
-repoclip
-```
-
-### Options
-
-- `-i, --ignore <patterns...>` - Additional patterns to ignore
-- `-o, --only <patterns...>` - Only include files matching these patterns
-- `-s, --stdout` - Output to stdout instead of clipboard
-- `-h, --help` - Display help information
-- `-V, --version` - Display version
-
-### Examples
-
-```bash
-# Copy all non-gitignored files
-repoclip
-
-# Ignore all .log files
-repoclip --ignore "**/*.log"
-
-# Only include .ts and .js files
-repoclip --only "*.ts" "*.js"
-
-# Ignore tmp/ and only include src/
-repoclip -i "tmp/*" -o "src/**"
-
-# Display files instead of copying
-repoclip --stdout
-
-# Display only JSON files
-repoclip -s -o "*.json"
-```
-
 ## Features
 
 - Automatically respects `.gitignore` patterns

@@ -11,6 +11,7 @@ import { minimatch } from 'minimatch';
 interface Options {
   ignore?: string[];
   only?: string[];
+  stdout?: boolean;
 }
 
 async function getGitignorePatterns(dir: string): Promise<string[]> {
@@ -84,6 +85,7 @@ async function main() {
     .version('1.0.0')
     .option('-i, --ignore <patterns...>', 'additional patterns to ignore')
     .option('-o, --only <patterns...>', 'only include files matching these patterns')
+    .option('-s, --stdout', 'output to stdout instead of clipboard')
     .helpOption('-h, --help', 'display help for command')
     .addHelpText('after', `
 Examples:
@@ -91,6 +93,8 @@ Examples:
   $ repoclip --ignore "**/*.log"       # Ignore all .log files
   $ repoclip --only "*.ts" "*.js"      # Only include .ts and .js files
   $ repoclip -i "tmp/*" -o "src/**"    # Ignore tmp/ and only include src/
+  $ repoclip --stdout                  # Display files instead of copying
+  $ repoclip -s -o "*.json"            # Display only JSON files
     `);
   
   program.parse();
@@ -115,11 +119,18 @@ Examples:
       return;
     }
     
-    await clipboardy.write(content);
-    
     const fileCount = content.match(/File: /g)?.length || 0;
-    console.log(`✓ Copied ${fileCount} files to clipboard`);
-    console.log(`Total size: ${(content.length / 1024).toFixed(2)} KB`);
+    
+    if (options.stdout) {
+      // Output to console
+      console.log(content);
+      console.error(`\n--- ${fileCount} files, ${(content.length / 1024).toFixed(2)} KB ---`);
+    } else {
+      // Copy to clipboard
+      await clipboardy.write(content);
+      console.log(`✓ Copied ${fileCount} files to clipboard`);
+      console.log(`Total size: ${(content.length / 1024).toFixed(2)} KB`);
+    }
   } catch (error) {
     console.error('Error:', error);
     process.exit(1);

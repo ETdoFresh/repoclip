@@ -5,6 +5,13 @@ import * as path from 'path';
 import { glob } from 'glob';
 import ignore from 'ignore';
 import clipboardy from 'clipboardy';
+import { Command } from 'commander';
+import { minimatch } from 'minimatch';
+
+interface Options {
+  ignore?: string[];
+  only?: string[];
+}
 
 async function getGitignorePatterns(dir: string): Promise<string[]> {
   const gitignorePath = path.join(dir, '.gitignore');
@@ -16,12 +23,17 @@ async function getGitignorePatterns(dir: string): Promise<string[]> {
   return content.split('\n').filter(line => line.trim() && !line.startsWith('#'));
 }
 
-async function getFilesContent(dir: string): Promise<string> {
+async function getFilesContent(dir: string, options: Options): Promise<string> {
   const patterns = await getGitignorePatterns(dir);
   const ig = ignore().add(patterns);
   
   // Always ignore .git directory and node_modules
   ig.add(['.git', 'node_modules']);
+  
+  // Add additional ignore patterns from CLI
+  if (options.ignore && options.ignore.length > 0) {
+    ig.add(options.ignore);
+  }
   
   // Get all files
   const files = await glob('**/*', {
@@ -31,7 +43,14 @@ async function getFilesContent(dir: string): Promise<string> {
   });
   
   // Filter out ignored files
-  const validFiles = files.filter(file => !ig.ignores(file));
+  let validFiles = files.filter(file => !ig.ignores(file));
+  
+  // Apply --only filters if provided
+  if (options.only && options.only.length > 0) {
+    validFiles = validFiles.filter(file => 
+      options.only!.some(pattern => minimatch(file, pattern))
+    );
+  }
   
   let output = '';
   
@@ -57,11 +76,39 @@ async function getFilesContent(dir: string): Promise<string> {
 }
 
 async function main() {
+  const program = new Command();
+  
+  program
+    .name('repoclip')
+    .description('Copy all non-gitignored files to clipboard')
+    .version('1.0.0')
+    .option('-i, --ignore <patterns...>', 'additional patterns to ignore')
+    .option('-o, --only <patterns...>', 'only include files matching these patterns')
+    .helpOption('-h, --help', 'display help for command')
+    .addHelpText('after', `
+Examples:
+  $ repoclip                           # Copy all non-gitignored files
+  $ repoclip --ignore "**/*.log"       # Ignore all .log files
+  $ repoclip --only "*.ts" "*.js"      # Only include .ts and .js files
+  $ repoclip -i "tmp/*" -o "src/**"    # Ignore tmp/ and only include src/
+    `);
+  
+  program.parse();
+  const options = program.opts<Options>();
+  
   try {
     const currentDir = process.cwd();
     console.log('Reading files from:', currentDir);
     
-    const content = await getFilesContent(currentDir);
+    if (options.ignore) {
+      console.log('Additional ignores:', options.ignore.join(', '));
+    }
+    
+    if (options.only) {
+      console.log('Only including:', options.only.join(', '));
+    }
+    
+    const content = await getFilesContent(currentDir, options);
     
     if (!content) {
       console.log('No files found to copy.');

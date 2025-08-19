@@ -1,6 +1,7 @@
 {
   "name": "repoclip",
   "version": "1.0.0",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "repoclip": "./dist/index.js"

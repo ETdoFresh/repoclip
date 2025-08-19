@@ -126,10 +126,18 @@ Examples:
       console.log(content);
       console.error(`\n--- ${fileCount} files, ${(content.length / 1024).toFixed(2)} KB ---`);
     } else {
-      // Copy to clipboard
-      await clipboardy.write(content);
-      console.log(`✓ Copied ${fileCount} files to clipboard`);
-      console.log(`Total size: ${(content.length / 1024).toFixed(2)} KB`);
+      // Try to copy to clipboard
+      try {
+        await clipboardy.write(content);
+        console.log(`✓ Copied ${fileCount} files to clipboard`);
+        console.log(`Total size: ${(content.length / 1024).toFixed(2)} KB`);
+      } catch (clipboardError) {
+        // Fallback to stdout if clipboard fails
+        console.error('Warning: Clipboard access failed. Outputting to stdout instead.');
+        console.error('Use --stdout flag to avoid this warning.\n');
+        console.log(content);
+        console.error(`\n--- ${fileCount} files, ${(content.length / 1024).toFixed(2)} KB ---`);
+      }
     }
   } catch (error) {
     console.error('Error:', error);
